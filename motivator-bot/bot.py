@@ -71,6 +71,6 @@ if __name__ == '__main__':
     job_queue = app.job_queue
     # Для теста можно поставить run_repeating(daily_check, interval=60)
     # Для прода потом поставить run_daily(daily_check, time=datetime.time(hour=15, minute=0)) 
-    job_queue.run_daily(daily_check, time=datetime.time(hour=15, minute=45))
+    job_queue.run_daily(daily_check, time=datetime.time(hour=16, minute=45))
 
     app.run_polling()
