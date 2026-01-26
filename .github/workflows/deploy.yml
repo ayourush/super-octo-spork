@@ -1,0 +1,81 @@
+name: Production Deploy (OIDC + Dynamic Inventory)
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: eu-north-1
+
+      - name: Fetch Infrastructure Data
+        id: fetch_data
+        run: |
+          IPS=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Lab-Server-*" "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].PublicIpAddress" \
+            --output text)
+          
+          RDS=$(aws rds describe-db-instances \
+            --db-instance-identifier bot-db \
+            --query "DBInstances[0].Endpoint.Address" \
+            --output text)
+            
+          echo "Найдены серверы: $IPS"
+          echo "Найден RDS: $RDS"
+          
+          echo "server_ips=$IPS" >> $GITHUB_OUTPUT
+          echo "rds_host=$RDS" >> $GITHUB_OUTPUT
+
+      - name: Whitelist Runner IP
+        id: setup_firewall
+        run: |
+          MY_IP=$(curl -s https://checkip.amazonaws.com)
+          echo "runner_ip=$MY_IP" >> $GITHUB_OUTPUT
+          
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp --port 22 --cidr ${MY_IP}/32
+
+      - name: Setup SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Run Ansible Playbook
+        run: |
+          echo "[web_servers]" > inventory.ini
+          for ip in ${{ steps.fetch_data.outputs.server_ips }}; do
+            echo "server ansible_host=$ip" >> inventory.ini
+          done
+          
+          cat inventory.ini
+          
+          ansible-playbook -i inventory.ini ansible/deploy_docker_bots.yml \
+            --extra-vars "db_host=${{ steps.fetch_data.outputs.rds_host }}" \
+            --extra-vars "db_password=${{ secrets.DB_PASSWORD }}" \
+            --extra-vars "motivator_token=${{ secrets.MOTIVATOR_TOKEN }}" \
+            --extra-vars "memer_token=${{ secrets.MEMER_TOKEN }}" \
+            --user ubuntu
+
+      - name: Revoke Runner IP
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.AWS_SG_ID }} \
+            --protocol tcp --port 22 --cidr ${{ steps.setup_firewall.outputs.runner_ip }}/32

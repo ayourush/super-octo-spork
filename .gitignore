@@ -4,6 +4,21 @@ __MACOSX/
 .AppleDouble
 .LSOverride
 
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json
+
+# Ansible
+inventory.ini
+vars.yml
+
+# Keys
+*.pem
+aws_lab_key*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
