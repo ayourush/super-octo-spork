@@ -27,15 +27,17 @@ jobs:
           IPS=$(aws ec2 describe-instances \
             --filters "Name=tag:Name,Values=Lab-Server-*" "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].PublicIpAddress" \
-            --output text)
+            --output text | tr -s '[:space:]' ' ')
           
+          IPS=$(echo $IPS | xargs)
+
           RDS=$(aws rds describe-db-instances \
             --db-instance-identifier bot-db \
             --query "DBInstances[0].Endpoint.Address" \
-            --output text)
+            --output text | tr -d '\n')
             
-          echo "Найдены серверы: $IPS"
-          echo "Найден RDS: $RDS"
+          echo "Debug IPS: $IPS"
+          echo "Debug RDS: $RDS"
           
           echo "server_ips=$IPS" >> $GITHUB_OUTPUT
           echo "rds_host=$RDS" >> $GITHUB_OUTPUT
@@ -43,7 +45,7 @@ jobs:
       - name: Whitelist Runner IP
         id: setup_firewall
         run: |
-          MY_IP=$(curl -s https://checkip.amazonaws.com)
+          MY_IP=$(curl -s https://checkip.amazonaws.com | tr -d '\n')
           echo "runner_ip=$MY_IP" >> $GITHUB_OUTPUT
           
           aws ec2 authorize-security-group-ingress \
@@ -74,7 +76,7 @@ jobs:
             --user ubuntu
 
       - name: Revoke Runner IP
-        if: always()
+        if: always() && steps.setup_firewall.outcome == 'success'
         run: |
           aws ec2 revoke-security-group-ingress \
             --group-id ${{ secrets.AWS_SG_ID }} \
