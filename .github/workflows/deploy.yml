@@ -1,4 +1,4 @@
-name: Production Deploy (OIDC + Dynamic Inventory)
+name: Production Deploy (OIDC + Dynamic Inventory + Split Roles)
 
 on:
   push:
@@ -24,22 +24,23 @@ jobs:
       - name: Fetch Infrastructure Data
         id: fetch_data
         run: |
-          IPS=$(aws ec2 describe-instances \
-            --filters "Name=tag:Name,Values=Lab-Server-*" "Name=instance-state-name,Values=running" \
+          MOTIVATOR_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Motivator-Server" "Name=instance-state-name,Values=running" \
             --query "Reservations[*].Instances[*].PublicIpAddress" \
             --output text | tr -s '[:space:]' ' ')
           
-          IPS=$(echo $IPS | xargs)
+          MEMER_IP=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=Memer-Server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[*].Instances[*].PublicIpAddress" \
+            --output text | tr -s '[:space:]' ' ')
 
           RDS=$(aws rds describe-db-instances \
             --db-instance-identifier bot-db \
             --query "DBInstances[0].Endpoint.Address" \
             --output text | tr -d '\n')
-            
-          echo "Debug IPS: $IPS"
-          echo "Debug RDS: $RDS"
-          
-          echo "server_ips=$IPS" >> $GITHUB_OUTPUT
+
+          echo "motivator_ip=$MOTIVATOR_IP" >> $GITHUB_OUTPUT
+          echo "memer_ip=$MEMER_IP" >> $GITHUB_OUTPUT          
           echo "rds_host=$RDS" >> $GITHUB_OUTPUT
 
       - name: Whitelist Runner IP
@@ -50,7 +51,9 @@ jobs:
           
           aws ec2 authorize-security-group-ingress \
             --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp --port 22 --cidr ${MY_IP}/32
+            --protocol tcp \
+            --port 22 \
+            --cidr ${MY_IP}/32
 
       - name: Setup SSH Key
         run: |
@@ -61,13 +64,12 @@ jobs:
 
       - name: Run Ansible Playbook
         run: |
-          echo "[web_servers]" > inventory.ini
-          for ip in ${{ steps.fetch_data.outputs.server_ips }}; do
-            echo "server ansible_host=$ip" >> inventory.ini
-          done
+          echo "[motivator_group]" > inventory.ini
+          echo "motivator-host ansible_host=${{ steps.fetch_data.outputs.motivator_ip }}" >> inventory.ini
           
-          cat inventory.ini
-          
+          echo "[memer_group]" >> inventory.ini
+          echo "memer-host ansible_host=${{ steps.fetch_data.outputs.memer_ip }}" >> inventory.ini
+                    
           ansible-playbook -i inventory.ini ansible/deploy_docker_bots.yml \
             --extra-vars "db_host=${{ steps.fetch_data.outputs.rds_host }}" \
             --extra-vars "db_password=${{ secrets.DB_PASSWORD }}" \

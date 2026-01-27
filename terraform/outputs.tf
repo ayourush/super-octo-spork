@@ -1,5 +1,9 @@
-output "instance_ips" {
-  value = aws_instance.web_servers[*].public_ip
+output "motivator_ip" {
+  value = aws_instance.motivator_host.public_ip
+}
+
+output "memer_ip" {
+  value = aws_instance.memer_host.public_ip
 }
 
 output "github_role_arn" {

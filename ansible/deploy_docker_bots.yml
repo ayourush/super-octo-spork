@@ -1,93 +1,64 @@
 ---
-- name: Deploy Dockerized Telegram Bots
-  hosts: web_servers
+- name: Common Setup for All Servers
+  hosts: motivator_group:memer_group
   become: yes
-  
-  vars:
-    project_root: "/home/ubuntu/app"
-    motivator_path: "{{ project_root }}/motivator"
-    memer_path: "{{ project_root }}/memer"
-
   tasks:
-    - name: Install system packages
+    - name: Install Docker and dependencies
       apt:
-        name:
-          - docker.io
-          - python3-docker
-          - python3-pip
+        name: [docker.io, python3-docker, python3-pip]
         state: present
         update_cache: yes
 
-    - name: Create project directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-        mode: '0755'
-      loop:
-        - "{{ motivator_path }}"
-        - "{{ memer_path }}"
-
+- name: Deploy Motivator Bot
+  hosts: motivator_group
+  become: yes
+  tasks:
     - name: Copy Motivator code
       copy:
         src: "../motivator-bot/"
-        dest: "{{ motivator_path }}/"
+        dest: "/home/ubuntu/motivator/"
         owner: ubuntu
-        group: ubuntu
-        mode: '0644'
+        mode: '0755'
 
-    - name: Copy Memer code
-      copy:
-        src: "../memer-bot/"
-        dest: "{{ memer_path }}/"
-        owner: ubuntu
-        group: ubuntu
-        mode: '0644'
-
-    - name: Build Motivator image
-      docker_image:
-        name: motivator_bot
-        source: build
-        build:
-          path: "{{ motivator_path }}"
-        force_source: yes
-
-    - name: Build Memer image
-      docker_image:
-        name: memer_bot
-        source: build
-        build:
-          path: "{{ memer_path }}"
-        force_source: yes
-
-    - name: Start Motivator container
+    - name: Run Motivator Container
       docker_container:
         name: motivator
         image: motivator_bot
         state: started
         restart_policy: always
         recreate: yes
+        build:
+          path: "/home/ubuntu/motivator"
         env:
           TG_TOKEN: "{{ motivator_token }}"
           DB_HOST: "{{ db_host }}"
-          DB_NAME: "bot_stats"
-          DB_USER: "bot_admin"
           DB_PASS: "{{ db_password }}"
+          DB_USER: "bot_admin"
+          DB_NAME: "bot_stats"
 
-    - name: Start Memer container
+- name: Deploy Memer Bot
+  hosts: memer_group
+  become: yes
+  tasks:
+    - name: Copy Memer code
+      copy:
+        src: "../memer-bot/"
+        dest: "/home/ubuntu/memer/"
+        owner: ubuntu
+        mode: '0755'
+
+    - name: Run Memer Container
       docker_container:
         name: memer
         image: memer_bot
         state: started
         restart_policy: always
         recreate: yes
+        build:
+          path: "/home/ubuntu/memer"
         env:
           TG_TOKEN: "{{ memer_token }}"
           DB_HOST: "{{ db_host }}"
-          DB_NAME: "bot_stats"
-          DB_USER: "bot_admin"
           DB_PASS: "{{ db_password }}"
-
-    - name: Prune unused docker images
-      shell: docker image prune -f
+          DB_USER: "bot_admin"
+          DB_NAME: "bot_stats"

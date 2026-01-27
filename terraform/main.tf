@@ -34,15 +34,26 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-resource "aws_instance" "web_servers" {
-  count         = 2
-  ami           = "ami-0fa91bc90632c73c9"
-  instance_type = "t3.micro"
-
+resource "aws_instance" "motivator_host" {
+  ami                    = "ami-0fa91bc90632c73c9"
+  instance_type          = "t3.micro"
   key_name               = aws_key_pair.lab_key.key_name
   vpc_security_group_ids = [aws_security_group.allow_ssh.id]
 
   tags = {
-    Name = "Lab-Server-${count.index + 2}"
+    Name = "Motivator-Server"
+    Role = "motivator"
+  }
+}
+
+resource "aws_instance" "memer_host" {
+  ami                    = "ami-0fa91bc90632c73c9"
+  instance_type          = "t3.micro"
+  key_name               = aws_key_pair.lab_key.key_name
+  vpc_security_group_ids = [aws_security_group.allow_ssh.id]
+
+  tags = {
+    Name = "Memer-Server"
+    Role = "memer"
   }
 }
