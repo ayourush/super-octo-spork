@@ -15,20 +15,26 @@
   tasks:
     - name: Copy Motivator code
       copy:
-        src: "../motivator-bot/"
+        src: "../motivator/"
         dest: "/home/ubuntu/motivator/"
         owner: ubuntu
         mode: '0755'
 
+    - name: Build Motivator Image
+      community.docker.docker_image:
+        name: motivator_bot
+        build:
+          path: "/home/ubuntu/motivator"
+        source: build
+        force_source: yes
+
     - name: Run Motivator Container
-      docker_container:
+      community.docker.docker_container:
         name: motivator
         image: motivator_bot
         state: started
         restart_policy: always
         recreate: yes
-        build:
-          path: "/home/ubuntu/motivator"
         env:
           TG_TOKEN: "{{ motivator_token }}"
           DB_HOST: "{{ db_host }}"
@@ -42,20 +48,26 @@
   tasks:
     - name: Copy Memer code
       copy:
-        src: "../memer-bot/"
+        src: "../memer/"
         dest: "/home/ubuntu/memer/"
         owner: ubuntu
         mode: '0755'
 
+    - name: Build Memer Image
+      community.docker.docker_image:
+        name: memer_bot
+        build:
+          path: "/home/ubuntu/memer"
+        source: build
+        force_source: yes
+
     - name: Run Memer Container
-      docker_container:
+      community.docker.docker_container:
         name: memer
         image: memer_bot
         state: started
         restart_policy: always
         recreate: yes
-        build:
-          path: "/home/ubuntu/memer"
         env:
           TG_TOKEN: "{{ memer_token }}"
           DB_HOST: "{{ db_host }}"

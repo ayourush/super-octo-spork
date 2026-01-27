@@ -53,7 +53,7 @@ jobs:
             --group-id ${{ secrets.AWS_SG_ID }} \
             --protocol tcp \
             --port 22 \
-            --cidr ${MY_IP}/32
+            --cidr ${MY_IP}/32 > /dev/null
 
       - name: Setup SSH Key
         run: |
