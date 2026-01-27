@@ -70,6 +70,7 @@
         recreate: yes
         env:
           TG_TOKEN: "{{ memer_token }}"
+          ADMIN_ID: "{{ admin_id }}"
           DB_HOST: "{{ db_host }}"
           DB_PASS: "{{ db_password }}"
           DB_USER: "bot_admin"

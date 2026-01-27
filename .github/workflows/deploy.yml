@@ -75,6 +75,7 @@ jobs:
             --extra-vars "db_password=${{ secrets.DB_PASSWORD }}" \
             --extra-vars "motivator_token=${{ secrets.MOTIVATOR_TOKEN }}" \
             --extra-vars "memer_token=${{ secrets.MEMER_TOKEN }}" \
+            --extra-vars "admin_id=${{ secrets.ADMIN_ID }}" \
             --user ubuntu
 
       - name: Revoke Runner IP
@@ -82,4 +83,4 @@ jobs:
         run: |
           aws ec2 revoke-security-group-ingress \
             --group-id ${{ secrets.AWS_SG_ID }} \
-            --protocol tcp --port 22 --cidr ${{ steps.setup_firewall.outputs.runner_ip }}/32
+            --protocol tcp --port 22 --cidr ${{ steps.setup_firewall.outputs.runner_ip }}/32 > /dev/null
