@@ -12,7 +12,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 ADMIN_ID = os.getenv("ADMIN_ID")
-BOT_VERSION = "1.1.0"
+BOT_VERSION = "1.1.1"
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -135,7 +135,7 @@ async def post_init(application: Application):
     await init_db()
     application.bot_data['db_pool'] = await get_db_pool()
     application.job_queue.run_once(check_version_update, 10) 
-    application.job_queue.run_repeating(send_meme_job, interval=1800, first=60)
+    application.job_queue.run_repeating(send_meme_job, interval=3600, first=60)
 
 def main():
     if not TOKEN:
