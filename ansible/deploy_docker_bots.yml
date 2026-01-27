@@ -15,7 +15,7 @@
   tasks:
     - name: Copy Motivator code
       copy:
-        src: "../motivator/"
+        src: "../motivator-bot/"
         dest: "/home/ubuntu/motivator/"
         owner: ubuntu
         mode: '0755'
@@ -48,7 +48,7 @@
   tasks:
     - name: Copy Memer code
       copy:
-        src: "../memer/"
+        src: "../memer-bot/"
         dest: "/home/ubuntu/memer/"
         owner: ubuntu
         mode: '0755'
