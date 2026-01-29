@@ -13,7 +13,7 @@ DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 DB_NAME = os.getenv("DB_NAME")
 ADMIN_ID = os.getenv("ADMIN_ID")
-BOT_VERSION = "1.2.0" # Обновил версию
+BOT_VERSION = "1.2.1"
 
 # --- ЛОГИРОВАНИЕ ---
 logging.basicConfig(
@@ -94,7 +94,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ''', user.id, user.username, user.first_name)
     
     logger.info(f"User {user.id} started Memer.")
-    await update.message.reply_text(f"Привет, {user.first_name}! Мемы будут приходить каждые 30 минут.")
+    await update.message.reply_text(f"👋 Привет, {user.first_name}!\nЯ MemerBot 300, тащу сюда мемы с реддита, они будут приходить каждый час 🙌")
     
     if ADMIN_ID:
         try:
